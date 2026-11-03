@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>대리 주문 입력 - 산내면 콩두부</title>
+<style>
+  :root{--bg:#f4f1ea;--card:#fff;--ink:#2b2a26;--muted:#6b675d;--main:#b5651d;--dark:#8a4a12;--line:#e3dccb;--ok:#2e7d4f;--okbg:#e6f4ec}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans KR",system-ui,sans-serif;font-size:17px;line-height:1.45}
+  header{background:var(--dark);color:#fff;padding:14px 16px;text-align:center}
+  header h1{margin:0;font-size:1.3rem}
+  nav{display:flex;gap:6px;max-width:760px;margin:0 auto;padding:10px 16px 0;font-size:.85rem}
+  nav a{flex:1;text-align:center;padding:8px 4px;border-radius:8px;color:var(--muted);text-decoration:none;background:#e8e0cc}
+  nav a.on{background:var(--dark);color:#fff;font-weight:700}
+  main{max-width:760px;margin:0 auto;padding:14px 16px 40px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+  .card h2{margin:0 0 10px;font-size:1.05rem}
+  label.f{display:block;margin:10px 0 4px;font-size:.85rem;color:var(--muted)}
+  input[type=text],input[type=tel],input[type=date],input[type=search],select{width:100%;padding:13px;font-size:1rem;border:2px solid var(--line);border-radius:10px;background:#fff}
+  input:focus,select:focus{outline:none;border-color:var(--main)}
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg button{flex:1;min-width:70px;padding:12px 6px;font-size:.95rem;border:2px solid var(--line);background:#fff;border-radius:10px;cursor:pointer}
+  .seg button.on{border-color:var(--main);background:#fff3e3;font-weight:700;color:var(--dark)}
+  .results{margin-top:6px;border:1px solid var(--line);border-radius:10px;max-height:210px;overflow:auto}
+  .results button{display:flex;justify-content:space-between;width:100%;text-align:left;padding:12px;border:none;border-bottom:1px solid var(--line);background:#fff;font-size:.95rem;cursor:pointer}
+  .results button:last-child{border:none}
+  .results button:hover{background:#fff3e3}
+  .results small{color:var(--muted)}
+  .picked{display:flex;justify-content:space-between;align-items:center;background:var(--okbg);border:1px solid #b9dfc9;border-radius:10px;padding:12px;margin-top:8px}
+  .picked button{border:none;background:none;color:var(--muted);font-size:.85rem;cursor:pointer;text-decoration:underline}
+  .qtyrow{display:flex;align-items:center;gap:10px}
+  .qtyrow button.s{width:54px;height:54px;font-size:1.7rem;border:none;border-radius:50%;background:var(--main);color:#fff;cursor:pointer;flex:none}
+  .qtyrow input{text-align:center;font-size:1.5rem;font-weight:700}
+  .quick{display:flex;gap:6px;margin-top:8px}
+  .quick button{flex:1;padding:9px 0;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer;font-size:.9rem}
+  .sum{display:flex;justify-content:space-between;padding:6px 0}
+  .sum.total{font-size:1.2rem;font-weight:700;color:var(--dark);border-top:1px dashed var(--line);margin-top:6px;padding-top:10px}
+  .days{display:flex;gap:6px}
+  .days label{flex:1;text-align:center;padding:11px 0;border:2px solid var(--line);border-radius:10px;cursor:pointer;background:#fff}
+  .days input{display:none}
+  .days label:has(input:checked){border-color:var(--main);background:#fff3e3;font-weight:700;color:var(--dark)}
+  .hide{display:none}
+  .submit{width:100%;padding:17px;font-size:1.15rem;font-weight:700;background:var(--dark);color:#fff;border:none;border-radius:12px;cursor:pointer}
+  .submit:disabled{background:#c9c2b0;cursor:not-allowed}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ok);color:#fff;padding:14px 22px;border-radius:30px;font-weight:700;box-shadow:0 4px 14px #0004;opacity:0;pointer-events:none;transition:opacity .25s;max-width:90%;text-align:center}
+  .toast.show{opacity:1}
+  .recent .row{display:flex;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);font-size:.9rem}
+  .recent .row:last-child{border:none}
+  .recent small{color:var(--muted)}
+  .empty{color:var(--muted);text-align:center;padding:10px 0;font-size:.9rem}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+</style>
+</head>
+<body>
+<header><h1>📞 대리 주문 입력 <span style="font-size:.7rem;opacity:.8">(화면 시안)</span></h1></header>
+<nav>
+  <a href="index.html">주문하기</a>
+  <a class="on" href="admin-order.html">대리 주문</a>
+  <a href="admin-delivery.html">배달 목록</a>
+  <a href="#" onclick="alert('다음 단계에서 제작 예정입니다');return false">대시보드</a>
+  <a href="#" onclick="alert('다음 단계에서 제작 예정입니다');return false">입금 관리</a>
+</nav>
+
+<main>
+<form id="form">
+  <section class="card">
+    <h2>① 접수 경로</h2>
+    <div class="seg" id="srcSeg">
+      <button type="button" data-v="전화" class="on">📞 전화</button>
+      <button type="button" data-v="방문">🚶 방문</button>
+      <button type="button" data-v="문자">💬 문자</button>
+      <button type="button" data-v="기타">기타</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>② 주문 장소</h2>
+    <input type="search" id="q" placeholder="장소 이름 검색 (예: 경로당 07, 캠핑)" autocomplete="off">
+    <div class="results" id="results"></div>
+    <div class="picked hide" id="picked"><div><b id="pickedName"></b><br><small id="pickedSub"></small></div><button type="button" id="repick">변경</button></div>
+    <label class="f" for="tel">연락처 (장소 선택 시 자동 입력, 수정 가능)</label>
+    <input id="tel" type="tel" inputmode="numeric" placeholder="010-0000-0000">
+    <label class="f" for="who">주문자 / 담당자 성함 (선택)</label>
+    <input id="who" type="text" placeholder="예) 이장님">
+  </section>
+
+  <section class="card">
+    <h2>③ 수량</h2>
+    <div class="qtyrow">
+      <button type="button" class="s" id="minus">−</button>
+      <input id="qty" type="text" inputmode="numeric" value="0">
+      <button type="button" class="s" id="plus">+</button>
+    </div>
+    <div class="quick"><button type="button" data-a="1">+1</button><button type="button" data-a="5">+5</button><button type="button" data-a="10">+10</button><button type="button" data-a="0">초기화</button></div>
+    <div class="sum" style="margin-top:12px"><span>단가</span><span id="unit"></span></div>
+    <div class="sum total"><span>합계</span><span id="total">0원</span></div>
+  </section>
+
+  <section class="card">
+    <h2>④ 배달</h2>
+    <div class="seg" id="modeSeg">
+      <button type="button" data-m="once" class="on">희망일 1회</button>
+      <button type="button" data-m="repeat">정기 배달</button>
+    </div>
+    <div id="onceBox"><label class="f" for="date">배달일</label><input id="date" type="date"></div>
+    <div id="repeatBox" class="hide">
+      <label class="f">요일</label>
+      <div class="days">
+        <label><input type="radio" name="dow" value="월">월</label><label><input type="radio" name="dow" value="화">화</label><label><input type="radio" name="dow" value="수">수</label><label><input type="radio" name="dow" value="목">목</label><label><input type="radio" name="dow" value="금">금</label>
+      </div>
+      <div class="two">
+        <div><label class="f" for="cycle">주기</label><select id="cycle"><option>매주</option><option>격주</option><option>매월 첫째 주</option></select></div>
+        <div><label class="f" for="start">시작일</label><input id="start" type="date"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>⑤ 결제 · 메모</h2>
+    <div class="seg" id="paySeg">
+      <button type="button" data-p="미입금" class="on">미입금</button>
+      <button type="button" data-p="입금완료">입금완료</button>
+      <button type="button" data-p="현장결제">현장결제</button>
+    </div>
+    <label class="f" for="memo">요청사항 / 메모</label>
+    <input id="memo" type="text" placeholder="예) 회관 뒷문 앞, 오전 중 배달">
+  </section>
+
+  <button class="submit" id="submit" type="submit" disabled>주문 등록</button>
+</form>
+
+<section class="card recent" style="margin-top:14px">
+  <h2>방금 등록한 주문</h2>
+  <div id="recent"><div class="empty">아직 등록한 주문이 없습니다</div></div>
+</section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+const UNIT_PRICE = 3000; // 임시 단가
+
+// 임시 장소 데이터 (엑셀 목록 받으면 교체)
+const PLACES = [
+  ...Array.from({length:39},(_,i)=>({type:"경로당",name:`경로당 ${String(i+1).padStart(2,"0")} (임시)`,tel:`010-1111-${String(i+1).padStart(4,"0")}`})),
+  ...Array.from({length:30},(_,i)=>({type:"캠핑장",name:`캠핑장 ${String(i+1).padStart(2,"0")} (임시)`,tel:`010-2222-${String(i+1).padStart(4,"0")}`}))
+];
+
+const $ = id => document.getElementById(id);
+const won = n => n.toLocaleString("ko-KR")+"원";
+const iso = d => new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+let src="전화", mode="once", pay="미입금", place=null, qty=0;
+const recent = [];
+
+function seg(id, attr, fn){
+  document.querySelectorAll(`#${id} button`).forEach(b=>b.onclick=()=>{
+    document.querySelectorAll(`#${id} button`).forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); fn(b.dataset[attr]);
+  });
+}
+seg("srcSeg","v",v=>src=v);
+seg("paySeg","p",v=>pay=v);
+seg("modeSeg","m",v=>{mode=v;$("onceBox").classList.toggle("hide",v!=="once");$("repeatBox").classList.toggle("hide",v!=="repeat");check();});
+
+function showResults(){
+  const k = $("q").value.trim();
+  const list = (k ? PLACES.filter(p=>p.name.includes(k)) : PLACES).slice(0,30);
+  $("results").innerHTML = "";
+  if(!list.length){ $("results").innerHTML='<div class="empty">검색 결과가 없습니다</div>'; return; }
+  list.forEach(p=>{
+    const b=document.createElement("button"); b.type="button";
+    b.innerHTML="<span></span><small></small>";
+    b.firstChild.textContent=p.name; b.lastChild.textContent=p.type;
+    b.onclick=()=>pick(p); $("results").append(b);
+  });
+}
+function pick(p){
+  place=p; $("tel").value=p.tel;
+  $("pickedName").textContent=p.name; $("pickedSub").textContent=p.type;
+  $("picked").classList.remove("hide"); $("results").classList.add("hide"); $("q").classList.add("hide");
+  check();
+}
+$("repick").onclick=()=>{place=null;$("picked").classList.add("hide");$("results").classList.remove("hide");$("q").classList.remove("hide");$("q").focus();check();};
+$("q").oninput=showResults;
+
+function setQty(n){qty=Math.max(0,Math.min(500,n||0));$("qty").value=qty;$("total").textContent=won(qty*UNIT_PRICE);check();}
+$("plus").onclick=()=>setQty(qty+1); $("minus").onclick=()=>setQty(qty-1);
+$("qty").oninput=e=>setQty(parseInt(e.target.value.replace(/\D/g,""),10));
+document.querySelectorAll(".quick button").forEach(b=>b.onclick=()=>setQty(b.dataset.a==="0"?0:qty+Number(b.dataset.a)));
+
+function check(){
+  const ok = mode==="once" ? !!$("date").value : (!!document.querySelector("input[name=dow]:checked") && !!$("start").value);
+  $("submit").disabled = !(place && qty>0 && ok);
+}
+["date","start","tel"].forEach(i=>$(i).addEventListener("input",check));
+document.querySelectorAll("input[name=dow]").forEach(r=>r.onchange=check);
+
+$("unit").textContent=won(UNIT_PRICE)+" / 모";
+$("date").min=$("start").min=iso(new Date());
+$("date").value=iso(new Date(Date.now()+864e5));
+
+function toast(t){const e=$("toast");e.textContent=t;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),2400);}
+
+$("form").onsubmit=e=>{
+  e.preventDefault();
+  const when = mode==="once" ? `${$("date").value} 1회`
+    : `${$("cycle").value} ${document.querySelector("input[name=dow]:checked").value}요일 (${$("start").value}~)`;
+  recent.unshift({place:place.name,qty,when,pay,src});
+  renderRecent();
+  toast(`${place.name} · ${qty}모 등록 완료`);
+  // 다음 전화를 위해 초기화
+  place=null; $("picked").classList.add("hide"); $("results").classList.remove("hide"); $("q").classList.remove("hide");
+  $("q").value=""; $("tel").value=""; $("who").value=""; $("memo").value="";
+  setQty(0); showResults(); window.scrollTo({top:0,behavior:"smooth"});
+};
+function renderRecent(){
+  $("recent").innerHTML="";
+  recent.slice(0,5).forEach(r=>{
+    const d=document.createElement("div"); d.className="row";
+    d.innerHTML="<div><b></b><br><small></small></div><div style='text-align:right'><b></b><br><small></small></div>";
+    const [l,rr]=d.children;
+    l.querySelector("b").textContent=r.place; l.querySelector("small").textContent=`${r.when} · ${r.src} 접수`;
+    rr.querySelector("b").textContent=`${r.qty}모`; rr.querySelector("small").textContent=r.pay;
+    $("recent").append(d);
+  });
+}
+showResults(); setQty(0);
+</script>
+</body>
+</html>
