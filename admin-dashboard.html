@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>현황 대시보드 - 산내면 콩두부</title>
+<style>
+  :root{--bg:#f4f1ea;--card:#fff;--ink:#2b2a26;--muted:#6b675d;--main:#b5651d;--dark:#8a4a12;--line:#e3dccb;--ok:#2e7d4f;--warn:#b3261e;--blue:#2a6f97;--gold:#c58b2a}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans KR",system-ui,sans-serif;font-size:17px;line-height:1.45}
+  header{background:var(--dark);color:#fff;padding:14px 16px;text-align:center}
+  header h1{margin:0;font-size:1.3rem}
+  nav{display:flex;gap:6px;max-width:760px;margin:0 auto;padding:10px 16px 0;font-size:.8rem}
+  nav a{flex:1;text-align:center;padding:8px 2px;border-radius:8px;color:var(--muted);text-decoration:none;background:#e8e0cc}
+  nav a.on{background:var(--dark);color:#fff;font-weight:700}
+  main{max-width:760px;margin:0 auto;padding:14px 16px 40px}
+  .monthbar{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+  .monthbar button{width:48px;height:48px;font-size:1.4rem;border:none;border-radius:10px;background:var(--main);color:#fff;cursor:pointer}
+  .monthbar .m{flex:1;text-align:center;font-size:1.2rem;font-weight:700}
+  .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .kpi span{font-size:.82rem;color:var(--muted)}
+  .kpi b{display:block;font-size:clamp(1.15rem,5.4vw,1.6rem);margin-top:2px;white-space:nowrap}
+  .kpi small{color:var(--muted);font-size:.78rem}
+  .kpi.warn b{color:var(--warn)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+  .card h2{margin:0 0 12px;font-size:1.05rem;display:flex;justify-content:space-between;align-items:baseline}
+  .card h2 small{font-weight:400;font-size:.78rem;color:var(--muted)}
+  .split{display:flex;height:22px;border-radius:11px;overflow:hidden;background:#eee}
+  .split i{display:block;height:100%;transition:width .2s}
+  .legend{display:flex;justify-content:space-between;margin-top:8px;font-size:.9rem}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+  .chart{display:flex;align-items:flex-end;gap:8px;height:170px;padding-top:8px}
+  .col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
+  .col .v{font-size:.75rem;color:var(--muted);margin-bottom:3px}
+  .col .stack{width:100%;max-width:46px;display:flex;flex-direction:column-reverse;border-radius:6px 6px 0 0;overflow:hidden;background:#eee}
+  .col .stack i{display:block;width:100%}
+  .col .l{font-size:.8rem;margin-top:6px}
+  .col.cur .l{font-weight:700;color:var(--dark)}
+  .row{display:flex;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border:none}
+  .row small{color:var(--muted);font-size:.8rem}
+  .row .r{text-align:right;font-weight:700;flex:none}
+  .row .r.red{color:var(--warn)}
+  .link{display:block;margin-top:10px;text-align:center;font-size:.9rem;color:var(--dark);font-weight:700;text-decoration:none}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chips span{padding:6px 10px;background:#fff3e3;border:1px solid var(--line);border-radius:16px;font-size:.85rem}
+  .empty{text-align:center;color:var(--muted);padding:12px 0;font-size:.9rem}
+  .note{text-align:center;color:var(--muted);font-size:.8rem;margin-top:14px}
+</style>
+</head>
+<body>
+<header><h1>📊 현황 대시보드 <span style="font-size:.7rem;opacity:.8">(화면 시안)</span></h1></header>
+<nav>
+  <a href="index.html">주문하기</a>
+  <a href="admin-order.html">대리 주문</a>
+  <a href="admin-delivery.html">배달 목록</a>
+  <a class="on" href="admin-dashboard.html">대시보드</a>
+  <a href="admin-payment.html">입금 관리</a>
+</nav>
+
+<main>
+  <div class="monthbar">
+    <button id="prev" aria-label="이전 달">‹</button>
+    <div class="m" id="month"></div>
+    <button id="next" aria-label="다음 달">›</button>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><span>총 주문 수량</span><b id="kQty">0모</b><small id="kQtySub"></small></div>
+    <div class="kpi"><span>청구 금액</span><b id="kBill">0원</b><small id="kBillSub"></small></div>
+    <div class="kpi warn"><span>미배달</span><b id="kTodo">0건</b><small id="kTodoSub"></small></div>
+    <div class="kpi warn"><span>미수금</span><b id="kDue">0원</b><small id="kDueSub"></small></div>
+  </div>
+
+  <section class="card">
+    <h2>경로당 · 캠핑장 비율 <small>수량 기준</small></h2>
+    <div class="split"><i id="bA" style="background:var(--gold)"></i><i id="bB" style="background:var(--blue)"></i></div>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--gold)"></span>경로당 <b id="lA"></b></span>
+      <span><span class="dot" style="background:var(--blue)"></span>캠핑장 <b id="lB"></b></span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>최근 6개월 주문 수량 <small>모</small></h2>
+    <div class="chart" id="chart"></div>
+  </section>
+
+  <section class="card">
+    <h2>미수금 상위 <small>입금 대기 순</small></h2>
+    <div id="dueList"></div>
+    <a class="link" href="admin-payment.html">입금 관리로 이동 ›</a>
+  </section>
+
+  <section class="card">
+    <h2>예정된 배달 <small>오늘 이후 5건</small></h2>
+    <div id="upcoming"></div>
+    <a class="link" href="admin-delivery.html">배달 목록으로 이동 ›</a>
+  </section>
+
+  <section class="card">
+    <h2>이번 달 주문 없는 장소 <small id="noCnt"></small></h2>
+    <div class="chips" id="noOrder"></div>
+  </section>
+
+  <p class="note">샘플 데이터로 만든 시안입니다. 이후 실제 주문 데이터와 연결됩니다.</p>
+</main>
+
+<script>
+const UNIT_PRICE = 3000;
+const $ = id => document.getElementById(id);
+const won = n => n.toLocaleString("ko-KR")+"원";
+const now = new Date();
+let y = now.getFullYear(), m = now.getMonth();
+const key = (yy,mm)=>{const d=new Date(yy,mm,1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`};
+
+// ===== 샘플 데이터 (임시) =====
+const NAMES = {
+  경로당: Array.from({length:39},(_,i)=>`경로당 ${String(i+1).padStart(2,"0")} (임시)`),
+  캠핑장: Array.from({length:30},(_,i)=>`캠핑장 ${String(i+1).padStart(2,"0")} (임시)`)
+};
+// 결정적 의사난수로 월별 샘플 주문 생성
+let seed=7; const rnd=()=> (seed=(seed*9301+49297)%233280)/233280;
+const ORD=[]; // {month,type,place,qty,drops,paid,todo}
+for(let k=-5;k<=0;k++){
+  const mk=key(now.getFullYear(),now.getMonth()+k);
+  ["경로당","캠핑장"].forEach(t=>NAMES[t].forEach(n=>{
+    if(rnd()<(t==="경로당"?0.55:0.4)){
+      const q=Math.round((t==="경로당"?4:9)*(2+rnd()*3));
+      const drops=1+Math.floor(rnd()*4);
+      ORD.push({month:mk,type:t,place:n,qty:q,drops,paid:k<0?rnd()<.85:rnd()<.45,todo:k===0?Math.floor(drops*rnd()*.6):0});
+    }
+  }));
+}
+const UP=[
+  {d:"오늘",place:"경로당 01 (임시)",qty:5},{d:"오늘",place:"캠핑장 02 (임시)",qty:12},
+  {d:"내일",place:"경로당 21 (임시)",qty:6},{d:"내일",place:"캠핑장 05 (임시)",qty:10},{d:"모레",place:"경로당 33 (임시)",qty:5}
+];
+
+function render(){
+  const k=key(y,m); $("month").textContent=`${y}년 ${m+1}월`;
+  const o=ORD.filter(x=>x.month===k);
+  const qty=o.reduce((a,x)=>a+x.qty,0), bill=qty*UNIT_PRICE;
+  const due=o.filter(x=>!x.paid), dueAmt=due.reduce((a,x)=>a+x.qty*UNIT_PRICE,0);
+  const todo=o.reduce((a,x)=>a+x.todo,0);
+  const pk=key(y,m-1), pq=ORD.filter(x=>x.month===pk).reduce((a,x)=>a+x.qty,0);
+  const diff=qty-pq;
+
+  $("kQty").textContent=qty+"모";
+  $("kQtySub").textContent=pq? `전월 대비 ${diff>=0?"+":""}${diff}모` : "전월 자료 없음";
+  $("kBill").textContent=won(bill); $("kBillSub").textContent=`주문 장소 ${o.length}곳 / 69곳`;
+  $("kTodo").textContent=todo+"건"; $("kTodoSub").textContent=todo? "배달 예정 건수":"모두 배달 완료";
+  $("kDue").textContent=won(dueAmt); $("kDueSub").textContent=`미입금 ${due.length}곳`;
+
+  const a=o.filter(x=>x.type==="경로당").reduce((s,x)=>s+x.qty,0), b=qty-a;
+  $("bA").style.width=qty?(a/qty*100)+"%":"0"; $("bB").style.width=qty?(b/qty*100)+"%":"0";
+  $("lA").textContent=`${a}모`; $("lB").textContent=`${b}모`;
+
+  // 6개월 차트 (선택한 달 기준)
+  const months=[...Array(6)].map((_,i)=>key(y,m-5+i));
+  const data=months.map(mk=>{const l=ORD.filter(x=>x.month===mk);
+    return {mk,a:l.filter(x=>x.type==="경로당").reduce((s,x)=>s+x.qty,0),b:l.filter(x=>x.type==="캠핑장").reduce((s,x)=>s+x.qty,0)}});
+  const max=Math.max(1,...data.map(d=>d.a+d.b));
+  $("chart").innerHTML="";
+  data.forEach((d,i)=>{
+    const c=document.createElement("div"); c.className="col"+(i===5?" cur":"");
+    const h=(d.a+d.b)/max*120;
+    c.innerHTML=`<div class="v">${d.a+d.b||""}</div><div class="stack" style="height:${h}px"><i style="background:var(--gold);height:${d.a+d.b?d.a/(d.a+d.b)*100:0}%"></i><i style="background:var(--blue);height:${d.a+d.b?d.b/(d.a+d.b)*100:0}%"></i></div><div class="l">${Number(d.mk.slice(5))}월</div>`;
+    $("chart").append(c);
+  });
+
+  // 미수금 상위
+  const dl=$("dueList"); dl.innerHTML="";
+  const top=[...due].sort((p,q)=>q.qty-p.qty).slice(0,5);
+  if(!top.length) dl.innerHTML='<div class="empty">미수금이 없습니다 🎉</div>';
+  top.forEach(x=>{const r=document.createElement("div");r.className="row";
+    r.innerHTML="<div><b></b><br><small></small></div><div class='r red'></div>";
+    r.querySelector("b").textContent=x.place; r.querySelector("small").textContent=`${x.type} · ${x.qty}모`;
+    r.querySelector(".r").textContent=won(x.qty*UNIT_PRICE); dl.append(r);});
+
+  // 예정 배달 (이번 달일 때만 의미)
+  const up=$("upcoming"); up.innerHTML="";
+  UP.forEach(x=>{const r=document.createElement("div");r.className="row";
+    r.innerHTML="<div><b></b><br><small></small></div><div class='r'></div>";
+    r.querySelector("b").textContent=x.place; r.querySelector("small").textContent=x.d;
+    r.querySelector(".r").textContent=x.qty+"모"; up.append(r);});
+
+  // 주문 없는 장소
+  const ordered=new Set(o.map(x=>x.place));
+  const none=[...NAMES.경로당,...NAMES.캠핑장].filter(n=>!ordered.has(n));
+  $("noCnt").textContent=`${none.length}곳`;
+  $("noOrder").innerHTML="";
+  none.slice(0,18).forEach(n=>{const s=document.createElement("span");s.textContent=n.replace(" (임시)","");$("noOrder").append(s);});
+  if(none.length>18){const s=document.createElement("span");s.textContent=`외 ${none.length-18}곳`;$("noOrder").append(s);}
+}
+function shift(n){const d=new Date(y,m+n,1);y=d.getFullYear();m=d.getMonth();render();}
+$("prev").onclick=()=>shift(-1); $("next").onclick=()=>shift(1);
+render();
+</script>
+</body>
+</html>
