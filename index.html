@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>산내면 콩두부 주문</title>
+<style>
+  :root{
+    --bg:#faf6ee; --card:#fff; --ink:#2b2a26; --muted:#6b675d;
+    --main:#b5651d; --main-dark:#8a4a12; --line:#e3dccb; --ok:#2e7d4f;
+    font-size:18px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans KR",system-ui,sans-serif;line-height:1.5}
+  header{background:var(--main);color:#fff;padding:18px 16px;text-align:center}
+  header h1{margin:0;font-size:1.5rem}
+  header p{margin:4px 0 0;opacity:.9;font-size:.9rem}
+  nav{display:flex;gap:6px;max-width:640px;margin:0 auto;padding:10px 16px 0;font-size:.85rem}
+  nav a{flex:1;text-align:center;padding:8px 4px;border-radius:8px;color:var(--muted);text-decoration:none;background:#efe7d3}
+  nav a.on{background:var(--main-dark);color:#fff;font-weight:700}
+  main{max-width:640px;margin:0 auto;padding:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+  .card h2{margin:0 0 10px;font-size:1.1rem}
+  .step{display:inline-block;background:var(--main);color:#fff;border-radius:50%;width:1.6em;height:1.6em;text-align:center;line-height:1.6em;font-size:.85rem;margin-right:6px}
+  .seg{display:flex;gap:8px}
+  .seg button{flex:1;padding:14px 8px;font-size:1rem;border:2px solid var(--line);background:#fff;border-radius:10px;cursor:pointer}
+  .seg button.on{border-color:var(--main);background:#fff3e3;font-weight:700;color:var(--main-dark)}
+  select,input[type=text],input[type=tel],input[type=date]{width:100%;padding:14px;font-size:1rem;border:2px solid var(--line);border-radius:10px;background:#fff}
+  label.f{display:block;margin:10px 0 4px;font-size:.9rem;color:var(--muted)}
+  .qty{display:flex;align-items:center;justify-content:center;gap:18px;margin:6px 0}
+  .qty button{width:64px;height:64px;font-size:2rem;border-radius:50%;border:none;background:var(--main);color:#fff;cursor:pointer}
+  .qty output{min-width:3.2em;text-align:center;font-size:2rem;font-weight:700}
+  .qty small{font-size:1rem;font-weight:400}
+  .sum{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line)}
+  .sum.total{font-size:1.25rem;font-weight:700;border:none;color:var(--main-dark)}
+  .days{display:flex;gap:6px;flex-wrap:wrap}
+  .days label{flex:1;min-width:2.6em;text-align:center;padding:12px 0;border:2px solid var(--line);border-radius:10px;cursor:pointer;background:#fff}
+  .days input{display:none}
+  .days input:checked+span{font-weight:700;color:var(--main-dark)}
+  .days label:has(input:checked){border-color:var(--main);background:#fff3e3}
+  .submit{width:100%;padding:18px;font-size:1.2rem;font-weight:700;background:var(--main-dark);color:#fff;border:none;border-radius:12px;cursor:pointer}
+  .submit:disabled{background:#c9c2b0;cursor:not-allowed}
+  .hide{display:none}
+  .done{text-align:center}
+  .done .mark{font-size:3rem;color:var(--ok)}
+  .done dl{text-align:left;margin:12px 0}
+  .done dt{color:var(--muted);font-size:.85rem;margin-top:8px}
+  .done dd{margin:0;font-weight:700}
+  .note{font-size:.8rem;color:var(--muted);text-align:center;margin-top:10px}
+  .badge{background:#fff3e3;color:var(--main-dark);border-radius:6px;padding:2px 8px;font-size:.75rem;vertical-align:middle}
+</style>
+</head>
+<body>
+<header>
+  <h1>🫘 산내면 콩두부 주문</h1>
+  <p>경로당 · 캠핑장 전용 주문서 <span class="badge" style="color:#8a4a12">화면 시안</span></p>
+</header>
+<nav>
+  <a class="on" href="index.html">주문하기</a>
+  <a href="#" onclick="alert('2단계 이후 제작 예정입니다');return false">내 주문 확인</a>
+  <a href="#" onclick="alert('3단계에서 제작 예정입니다');return false">관리자</a>
+</nav>
+
+<main>
+<form id="form" class="">
+  <section class="card">
+    <h2><span class="step">1</span>어디로 보내드릴까요?</h2>
+    <div class="seg" id="typeSeg">
+      <button type="button" data-type="경로당" class="on">경로당 (39곳)</button>
+      <button type="button" data-type="캠핑장">캠핑장 (30곳)</button>
+    </div>
+    <label class="f" for="place">장소 선택</label>
+    <select id="place" required></select>
+    <label class="f" for="tel">연락처 (본인 확인용)</label>
+    <input id="tel" type="tel" inputmode="numeric" placeholder="010-0000-0000" required>
+  </section>
+
+  <section class="card">
+    <h2><span class="step">2</span>몇 모 필요하세요?</h2>
+    <div class="qty">
+      <button type="button" id="minus" aria-label="줄이기">−</button>
+      <output id="qty">0<small> 모</small></output>
+      <button type="button" id="plus" aria-label="늘리기">+</button>
+    </div>
+    <div class="sum"><span>콩두부 단가</span><span id="unit"></span></div>
+    <div class="sum total"><span>합계</span><span id="total">0원</span></div>
+  </section>
+
+  <section class="card">
+    <h2><span class="step">3</span>언제 받으실래요?</h2>
+    <div class="seg" id="modeSeg">
+      <button type="button" data-mode="once" class="on">희망일 1회</button>
+      <button type="button" data-mode="repeat">정기 배달</button>
+    </div>
+
+    <div id="onceBox">
+      <label class="f" for="date">희망 배달일</label>
+      <input id="date" type="date">
+    </div>
+
+    <div id="repeatBox" class="hide">
+      <label class="f">배달 요일</label>
+      <div class="days" id="days">
+        <label><input type="radio" name="dow" value="월"><span>월</span></label>
+        <label><input type="radio" name="dow" value="화"><span>화</span></label>
+        <label><input type="radio" name="dow" value="수"><span>수</span></label>
+        <label><input type="radio" name="dow" value="목"><span>목</span></label>
+        <label><input type="radio" name="dow" value="금"><span>금</span></label>
+      </div>
+      <label class="f" for="cycle">반복 주기</label>
+      <select id="cycle">
+        <option value="매주">매주</option>
+        <option value="격주">2주마다</option>
+        <option value="매월">매월 첫째 주</option>
+      </select>
+      <label class="f" for="startDate">시작일</label>
+      <input id="startDate" type="date">
+    </div>
+  </section>
+
+  <section class="card">
+    <h2><span class="step">4</span>요청사항 (선택)</h2>
+    <input id="memo" type="text" placeholder="예) 회관 뒷문 앞에 놓아주세요">
+  </section>
+
+  <button class="submit" id="submit" type="submit" disabled>주문하기</button>
+  <p class="note">전화 주문은 관리자가 대신 입력해 드립니다.</p>
+</form>
+
+<section id="result" class="card done hide">
+  <div class="mark">✔</div>
+  <h2>주문이 접수되었습니다</h2>
+  <dl id="resultList"></dl>
+  <button class="submit" type="button" id="again">새 주문하기</button>
+  <p class="note">※ 시안 화면입니다. 아직 서버에 저장되지 않습니다.</p>
+</section>
+</main>
+
+<script>
+// ===== 설정: 단가는 여기 한 곳만 고치면 됩니다 (임시값) =====
+const UNIT_PRICE = 3000;
+
+// ===== 장소 임시 데이터 (엑셀 목록 받으면 교체) =====
+const PLACES = {
+  "경로당": Array.from({length:39}, (_,i)=>`경로당 ${String(i+1).padStart(2,"0")} (임시)`),
+  "캠핑장": Array.from({length:30}, (_,i)=>`캠핑장 ${String(i+1).padStart(2,"0")} (임시)`)
+};
+
+const $ = id => document.getElementById(id);
+const won = n => n.toLocaleString("ko-KR") + "원";
+let type = "경로당", mode = "once", qty = 0;
+
+function fillPlaces(){
+  $("place").innerHTML = '<option value="">장소를 선택하세요</option>' +
+    PLACES[type].map(p=>`<option>${p}</option>`).join("");
+}
+function ymd(d){return d.toISOString().slice(0,10)}
+function check(){
+  const dateOk = mode==="once" ? !!$("date").value
+    : !!document.querySelector('input[name=dow]:checked') && !!$("startDate").value;
+  $("submit").disabled = !($("place").value && $("tel").value.trim().length>=9 && qty>0 && dateOk);
+}
+function render(){
+  $("qty").innerHTML = `${qty}<small> 모</small>`;
+  $("total").textContent = won(qty*UNIT_PRICE);
+  check();
+}
+
+$("unit").textContent = won(UNIT_PRICE) + " / 모";
+const tomorrow = new Date(Date.now()+86400000);
+$("date").min = $("startDate").min = ymd(tomorrow);
+
+document.querySelectorAll("#typeSeg button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#typeSeg button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on"); type=b.dataset.type; fillPlaces(); check();
+});
+document.querySelectorAll("#modeSeg button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#modeSeg button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on"); mode=b.dataset.mode;
+  $("onceBox").classList.toggle("hide", mode!=="once");
+  $("repeatBox").classList.toggle("hide", mode!=="repeat");
+  check();
+});
+$("plus").onclick = ()=>{ qty=Math.min(qty+1,200); render(); };
+$("minus").onclick = ()=>{ qty=Math.max(qty-1,0); render(); };
+["place","tel","date","startDate"].forEach(id=>$(id).addEventListener("input",check));
+document.querySelectorAll("input[name=dow]").forEach(r=>r.addEventListener("change",check));
+
+$("form").onsubmit = e=>{
+  e.preventDefault();
+  const when = mode==="once"
+    ? `${$("date").value} (1회)`
+    : `${$("cycle").value} ${document.querySelector('input[name=dow]:checked').value}요일 · ${$("startDate").value}부터`;
+  const rows = [
+    ["배달 장소", $("place").value],
+    ["연락처", $("tel").value],
+    ["수량", `${qty}모`],
+    ["합계 금액", won(qty*UNIT_PRICE)],
+    ["배달", when]
+  ];
+  if($("memo").value.trim()) rows.push(["요청사항", $("memo").value.trim()]);
+  $("resultList").innerHTML = rows.map(([k,v])=>`<dt>${k}</dt><dd></dd>`).join("");
+  document.querySelectorAll("#resultList dd").forEach((dd,i)=>dd.textContent=rows[i][1]);
+  $("form").classList.add("hide"); $("result").classList.remove("hide");
+  window.scrollTo(0,0);
+};
+$("again").onclick = ()=>location.reload();
+
+fillPlaces(); render();
+</script>
+</body>
+</html>
