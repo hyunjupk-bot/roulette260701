@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>입금 관리 - 산내면 콩두부</title>
+<style>
+  :root{--bg:#f4f1ea;--card:#fff;--ink:#2b2a26;--muted:#6b675d;--main:#b5651d;--dark:#8a4a12;--line:#e3dccb;--ok:#2e7d4f;--okbg:#e6f4ec;--warn:#b3261e;--warnbg:#fdecea}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans KR",system-ui,sans-serif;font-size:17px;line-height:1.45}
+  header{background:var(--dark);color:#fff;padding:14px 16px;text-align:center}
+  header h1{margin:0;font-size:1.3rem}
+  nav{display:flex;gap:6px;max-width:760px;margin:0 auto;padding:10px 16px 0;font-size:.8rem}
+  nav a{flex:1;text-align:center;padding:8px 2px;border-radius:8px;color:var(--muted);text-decoration:none;background:#e8e0cc}
+  nav a.on{background:var(--dark);color:#fff;font-weight:700}
+  main{max-width:760px;margin:0 auto;padding:14px 16px 40px}
+  .monthbar{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+  .monthbar button{width:48px;height:48px;font-size:1.4rem;border:none;border-radius:10px;background:var(--main);color:#fff;cursor:pointer}
+  .monthbar .m{flex:1;text-align:center;font-size:1.2rem;font-weight:700}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 6px;text-align:center}
+  .stat b{display:block;font-size:1.15rem}
+  .stat span{font-size:.78rem;color:var(--muted)}
+  .stat.due b{color:var(--warn)} .stat.paid b{color:var(--ok)}
+  .bar{height:10px;background:#e3dccb;border-radius:6px;overflow:hidden;margin-bottom:14px}
+  .bar i{display:block;height:100%;background:var(--ok);transition:width .2s}
+  .tools{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .tools button{padding:9px 14px;border:2px solid var(--line);border-radius:20px;background:#fff;font-size:.9rem;cursor:pointer}
+  .tools button.on{border-color:var(--main);background:#fff3e3;font-weight:700;color:var(--dark)}
+  input[type=search]{width:100%;padding:12px;font-size:1rem;border:2px solid var(--line);border-radius:10px;margin-bottom:12px}
+  .item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px}
+  .item.paid{background:var(--okbg);border-color:#b9dfc9}
+  .item.unpaid{border-left:6px solid var(--warn)}
+  .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .top b{display:block}
+  .top small{color:var(--muted);font-size:.8rem}
+  .amt{text-align:right;flex:none;font-weight:700;font-size:1.1rem}
+  .amt small{display:block;font-weight:400}
+  .status{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:6px;margin-left:4px;vertical-align:middle}
+  .status.u{background:var(--warnbg);color:var(--warn)}
+  .status.p{background:#d5ecde;color:var(--ok)}
+  .bottom{display:flex;gap:8px;align-items:center;margin-top:10px}
+  .bottom select,.bottom input{padding:10px;border:2px solid var(--line);border-radius:8px;font-size:.9rem;background:#fff;min-width:0}
+  .bottom select{flex:none}
+  .bottom input{flex:1}
+  .btn{flex:none;padding:11px 14px;border:2px solid var(--ok);border-radius:10px;background:#fff;color:var(--ok);font-weight:700;font-size:.95rem;cursor:pointer}
+  .item.paid .btn{background:#fff;border-color:var(--muted);color:var(--muted)}
+  .detail{margin-top:8px;font-size:.82rem;color:var(--muted)}
+  .empty{text-align:center;color:var(--muted);padding:40px 0;background:#fff;border-radius:12px;border:1px dashed var(--line)}
+  .note{text-align:center;color:var(--muted);font-size:.8rem;margin-top:14px}
+</style>
+</head>
+<body>
+<header><h1>💰 입금 관리 <span style="font-size:.7rem;opacity:.8">(화면 시안)</span></h1></header>
+<nav>
+  <a href="index.html">주문하기</a>
+  <a href="admin-order.html">대리 주문</a>
+  <a href="admin-delivery.html">배달 목록</a>
+  <a href="#" onclick="alert('다음 단계에서 제작 예정입니다');return false">대시보드</a>
+  <a class="on" href="admin-payment.html">입금 관리</a>
+</nav>
+
+<main>
+  <div class="monthbar">
+    <button id="prev" aria-label="이전 달">‹</button>
+    <div class="m" id="month"></div>
+    <button id="next" aria-label="다음 달">›</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><b id="sBill">0원</b><span>청구 합계</span></div>
+    <div class="stat paid"><b id="sPaid">0원</b><span>입금 완료</span></div>
+    <div class="stat due"><b id="sDue">0원</b><span>미수금</span></div>
+  </div>
+  <div class="bar"><i id="progress" style="width:0"></i></div>
+
+  <input type="search" id="q" placeholder="장소 이름 검색">
+  <div class="tools" id="tools">
+    <button data-f="all" class="on">전체</button>
+    <button data-f="unpaid">미입금</button>
+    <button data-f="paid">입금완료</button>
+    <button data-t="경로당">경로당</button>
+    <button data-t="캠핑장">캠핑장</button>
+  </div>
+
+  <div id="list"></div>
+  <p class="note">장소별로 해당 월 배달 건을 합산한 금액입니다. 시안 단계라 새로고침하면 초기화됩니다.</p>
+</main>
+
+<script>
+const UNIT_PRICE = 3000; // 임시 단가
+const $ = id => document.getElementById(id);
+const won = n => n.toLocaleString("ko-KR")+"원";
+const today = new Date();
+const ymKey = (y,m) => `${y}-${String(m+1).padStart(2,"0")}`;
+let y = today.getFullYear(), m = today.getMonth();
+let fStatus = "all", fType = "all";
+
+// ===== 샘플 데이터: 월/장소별 청구 (이후 주문 데이터 합산으로 교체) =====
+const thisM = ymKey(y,m);
+const prevD = new Date(y,m-1,1), prevM = ymKey(prevD.getFullYear(),prevD.getMonth());
+const mk = (id,type,place,qty,drops,month,paid,method="",date="",memo="") =>
+  ({id,type,place,qty,drops,month,paid,method,date,memo});
+const BILLS = [
+  mk(1,"경로당","경로당 01 (임시)",20,4,thisM,true,"계좌이체",`${thisM}-02`),
+  mk(2,"경로당","경로당 07 (임시)",12,4,thisM,false),
+  mk(3,"캠핑장","캠핑장 02 (임시)",48,4,thisM,false,"","","카드 결제 예정"),
+  mk(4,"캠핑장","캠핑장 11 (임시)",32,4,thisM,true,"현금",`${thisM}-03`),
+  mk(5,"경로당","경로당 15 (임시)",8,2,thisM,false),
+  mk(6,"경로당","경로당 21 (임시)",6,1,thisM,true,"계좌이체",`${thisM}-01`),
+  mk(7,"캠핑장","캠핑장 05 (임시)",10,1,thisM,false),
+  mk(8,"경로당","경로당 03 (임시)",16,4,prevM,true,"계좌이체",`${prevM}-28`),
+  mk(9,"캠핑장","캠핑장 02 (임시)",40,4,prevM,false,"","","독촉 필요"),
+];
+
+function render(){
+  $("month").textContent = `${y}년 ${m+1}월`;
+  const key = ymKey(y,m);
+  const all = BILLS.filter(b=>b.month===key);
+  const bill = all.reduce((a,b)=>a+b.qty*UNIT_PRICE,0);
+  const paid = all.filter(b=>b.paid).reduce((a,b)=>a+b.qty*UNIT_PRICE,0);
+  $("sBill").textContent=won(bill); $("sPaid").textContent=won(paid); $("sDue").textContent=won(bill-paid);
+  $("progress").style.width = bill ? (paid/bill*100)+"%" : "0";
+
+  const k = $("q").value.trim();
+  const rows = all.filter(b =>
+    (fStatus==="all" || (fStatus==="paid")===b.paid) &&
+    (fType==="all" || b.type===fType) && (!k || b.place.includes(k)));
+  const list=$("list"); list.innerHTML="";
+  if(!rows.length){ list.innerHTML='<div class="empty">표시할 내역이 없습니다</div>'; return; }
+
+  rows.sort((a,b)=>a.paid-b.paid); // 미입금 먼저
+  rows.forEach(b=>{
+    const el=document.createElement("div");
+    el.className="item "+(b.paid?"paid":"unpaid");
+    el.innerHTML=`<div class="top">
+        <div><b></b><small></small></div>
+        <div class="amt"><span></span><small></small></div>
+      </div>
+      <div class="detail"></div>
+      <div class="bottom">
+        <select><option>계좌이체</option><option>현금</option><option>카드</option></select>
+        <input type="text" placeholder="메모 (선택)">
+        <button class="btn"></button>
+      </div>`;
+    const name=el.querySelector("b");
+    name.textContent=b.place;
+    const st=document.createElement("span");
+    st.className="status "+(b.paid?"p":"u"); st.textContent=b.paid?"입금완료":"미입금";
+    name.append(st);
+    el.querySelector(".top small").textContent=b.type;
+    el.querySelector(".amt span").textContent=won(b.qty*UNIT_PRICE);
+    el.querySelector(".amt small").textContent=`${b.qty}모 · 배달 ${b.drops}회`;
+    el.querySelector(".detail").textContent = b.paid ? `${b.date} ${b.method} 입금 확인` : "입금 대기 중";
+    const sel=el.querySelector("select"), memo=el.querySelector("input"), btn=el.querySelector(".btn");
+    if(b.method) sel.value=b.method; memo.value=b.memo;
+    sel.disabled=b.paid;
+    memo.onchange=()=>b.memo=memo.value;
+    btn.textContent=b.paid?"입금 취소":"입금 확인";
+    btn.onclick=()=>{
+      if(b.paid){ if(!confirm(`${b.place} 입금 확인을 취소할까요?`))return; b.paid=false; b.method=""; b.date=""; }
+      else { b.paid=true; b.method=sel.value; b.date=new Date().toISOString().slice(0,10); }
+      render();
+    };
+    list.append(el);
+  });
+}
+
+function shift(n){ const d=new Date(y,m+n,1); y=d.getFullYear(); m=d.getMonth(); render(); }
+$("prev").onclick=()=>shift(-1); $("next").onclick=()=>shift(1);
+$("q").oninput=render;
+document.querySelectorAll("#tools button").forEach(b=>b.onclick=()=>{
+  if(b.dataset.f){ document.querySelectorAll("#tools [data-f]").forEach(x=>x.classList.remove("on")); b.classList.add("on"); fStatus=b.dataset.f; }
+  else { const was=b.classList.contains("on"); document.querySelectorAll("#tools [data-t]").forEach(x=>x.classList.remove("on")); if(!was){b.classList.add("on");fType=b.dataset.t;} else fType="all"; }
+  render();
+});
+render();
+</script>
+</body>
+</html>
