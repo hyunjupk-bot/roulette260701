@@ -1,0 +1,16 @@
+{
+  "name": "transcript-editor",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "녹취록 편집기 — 맥 로컬 서버 + Claude 연동",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0"
+  }
+}

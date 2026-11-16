@@ -48,7 +48,7 @@ button{cursor:pointer}
 .main{flex:1;display:flex;min-height:0}
 .side{width:392px;flex:none;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
 .tabs{display:flex;border-bottom:1px solid var(--line);background:#eef0f4}
-.tabs button{flex:1;border:0;background:transparent;padding:10px 4px;border-bottom:3px solid transparent;font-weight:600;color:var(--mute)}
+.tabs button{flex:1;border:0;background:transparent;padding:10px 2px;font-size:13px;border-bottom:3px solid transparent;font-weight:600;color:var(--mute)}
 .tabs button.on{color:var(--navy);border-bottom-color:var(--accent);background:var(--panel)}
 .pane{display:none;flex:1;overflow:auto;padding:12px}
 .pane.on{display:block}
@@ -100,6 +100,34 @@ summary{cursor:pointer;font-weight:600;color:var(--navy)}
   .paper,.page{width:210mm}
   .docname{min-width:120px}
 }
+/* Claude 연동 */
+.aibox{background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 11px;margin-bottom:12px}
+.aibox .top{display:flex;align-items:center;gap:7px;font-weight:600;color:var(--navy)}
+.dot{width:9px;height:9px;border-radius:50%;background:#b8bfcc;flex:none}
+.dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)}
+.aibox select{border:1px solid var(--line);border-radius:5px;padding:4px 6px;background:#fff;max-width:100%}
+.aibox .st{font-size:12px;color:var(--mute);margin:5px 0}
+.aibox .keyrow{display:none;gap:6px;margin-top:6px}
+.aibox .keyrow.on{display:flex}
+.aibox .keyrow input{flex:1;border:1px solid var(--line);border-radius:5px;padding:5px 8px}
+.engine{display:flex;gap:6px;margin:8px 0 2px}
+.engine label{flex:1;border:1px solid var(--line);border-radius:6px;padding:6px 8px;display:flex;gap:6px;align-items:center;font-size:13px;background:#fafbfc;cursor:pointer}
+.engine label.on{border-color:var(--accent);background:#eaf1fe}
+.bar{height:5px;border-radius:3px;background:#dfe4ee;overflow:hidden;margin-top:6px;display:none}
+.bar.on{display:block}
+.bar i{display:block;height:100%;width:30%;background:var(--accent);animation:slide 1.1s infinite ease-in-out}
+@keyframes slide{0%{margin-left:-30%}100%{margin-left:100%}}
+.pri-h{color:#b42318}.pri-m{color:var(--warn)}.pri-l{color:var(--mute)}
+#editor .v-ok{box-shadow:inset 3px 0 0 #1a7f4b}
+#editor .v-warn{background:#fff6dd;box-shadow:inset 3px 0 0 #d99a00}
+#editor .v-bad{background:#fde7e7;box-shadow:inset 3px 0 0 #d92d20}
+.aipop{position:fixed;right:18px;top:96px;width:340px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 36px rgba(20,40,75,.22);z-index:40;display:none;padding:12px}
+.aipop.on{display:block}
+.aipop h5{margin:0 0 8px;font-size:13px;color:var(--navy);display:flex;justify-content:space-between;align-items:center}
+.aipop .presets{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.aipop textarea{width:100%;height:96px;border:1px solid var(--line);border-radius:6px;padding:7px;resize:vertical}
+.aipop .sel{font-size:12px;color:var(--mute);background:#f3f5f9;border-radius:6px;padding:6px 8px;max-height:64px;overflow:auto;margin-bottom:8px}
+.doc sup.ev{color:#7b8494;font-size:.68em;margin-left:1px}
 /* document typography (editor, preview, print) */
 .doc{font-family:var(--docfont);font-size:var(--fs);line-height:var(--lh);color:#111;word-break:keep-all;overflow-wrap:break-word}
 .doc h1{font-size:1.7em;line-height:1.3;margin:0 0 .3em;color:#14284b;border-bottom:2px solid #14284b;padding-bottom:.25em}
@@ -169,6 +197,7 @@ summary{cursor:pointer;font-weight:600;color:var(--navy)}
     <button class="tb" id="bTable" title="표 삽입">▦ 표</button>
     <button class="tb" id="bHr" title="구분선">─</button>
     <button class="tb" id="bFind" title="찾아 바꾸기 (Ctrl+F)">찾기</button>
+    <button class="tb" id="bAi" title="선택한 문장을 Claude로 고치기" style="color:#6b3fd1;font-weight:600">✦ AI 편집</button>
   </div>
   <div class="grp">
     <select class="tsel" id="fontSel" title="글꼴"><option value="sans">고딕</option><option value="serif">명조</option></select>
@@ -197,9 +226,22 @@ summary{cursor:pointer;font-weight:600;color:var(--navy)}
       <button data-tab="src" class="on">① 원본·변환</button>
       <button data-tab="ana">② 맥락 분석</button>
       <button data-tab="sug">③ 후속 제안</button>
+      <button data-tab="ver">④ 사실 대조</button>
     </div>
 
     <div class="pane on" id="pane-src">
+      <div class="aibox" id="aiBox">
+        <div class="top"><span class="dot" id="aiDot"></span>Claude 연동 <span style="flex:1"></span><button class="btn sm" id="bKey">키 설정</button></div>
+        <div class="st" id="aiStatus">확인 중…</div>
+        <div class="keyrow" id="keyRow"><input type="password" id="keyIn" placeholder="sk-ant-… (이 맥에만 저장)" autocomplete="off"><button class="btn sm pri" id="keySave">저장</button><button class="btn sm" id="keyDel">삭제</button></div>
+        <div class="row" style="margin:6px 0 0"><select id="aiModel" title="모델"></select><select id="aiEffort" title="생각 깊이"><option value="low">빠르게</option><option value="medium" selected>보통</option><option value="high">깊게</option></select></div>
+        <div class="engine" id="engine">
+          <label data-e="rules"><input type="radio" name="eng" value="rules" hidden>⚡ 내장 규칙</label>
+          <label data-e="claude"><input type="radio" name="eng" value="claude" hidden>✦ Claude 분석</label>
+        </div>
+        <div class="bar" id="aiBar"><i></i></div>
+        <div class="st" id="aiUsage"></div>
+      </div>
       <h4>원본 텍스트 (녹취·음성 인식 결과)</h4>
       <div class="row">
         <button class="btn sm" id="bSample">샘플</button>
@@ -216,6 +258,7 @@ summary{cursor:pointer;font-weight:600;color:var(--navy)}
       <label class="chk"><input type="checkbox" id="oPunct" checked> 문장 부호 보정(마침표·물음표)</label>
       <label class="chk"><input type="checkbox" id="oMerge" checked> 같은 화자의 연속 발언 합치기</label>
       <label class="chk"><input type="checkbox" id="oTime"> 발언 시간 표기</label>
+      <label class="chk"><input type="checkbox" id="oEv"> 정리문에 근거 발언 번호 [n] 표기 (Claude 분석)</label>
       <div class="fld" style="grid-template-columns:86px 1fr"><label>주제 분할</label><input type="range" id="oSens" min="0" max="5" value="3"></div>
       <div class="hint">왼쪽(0)은 한 덩어리, 오른쪽은 잘게 나눕니다.</div>
       <h4>오인식 교정 사전 (한 줄에 ‘틀린말=맞는말’)</h4>
@@ -237,6 +280,7 @@ summary{cursor:pointer;font-weight:600;color:var(--navy)}
     </div>
 
     <div class="pane" id="pane-ana"><div class="empty">먼저 ‘① 원본·변환’에서 실행하세요.</div></div>
+    <div class="pane" id="pane-ver"><div class="empty">정리된 문서의 각 문장이 원본 발언에 근거하는지 Claude가 대조합니다.<br><br><button class="btn pri" id="bVerify">원본과 사실 대조 실행</button><div class="hint">문서 4번(후속 제안)은 제외합니다. 결과는 문서에 색 막대로 표시됩니다.</div></div></div>
     <div class="pane" id="pane-sug"><div class="empty">먼저 ‘① 원본·변환’에서 실행하세요.</div></div>
   </aside>
 
@@ -258,6 +302,23 @@ summary{cursor:pointer;font-weight:600;color:var(--navy)}
   <span id="zVal">100%</span>
 </div>
 
+<div class="aipop" id="aiPop">
+  <h5>✦ 선택 구간 AI 편집 <button class="btn sm" id="aiClose">닫기</button></h5>
+  <div class="sel" id="aiSel"></div>
+  <div class="presets">
+    <button class="btn sm" data-p="더 간결하게 줄이기. 핵심 사실은 유지">간결하게</button>
+    <button class="btn sm" data-p="공문서 문체(~하였음/~요청함 등 개조식 아님, 정중한 서술체)로 바꾸기">공문서체</button>
+    <button class="btn sm" data-p="누구나 이해하기 쉬운 말로 풀어 쓰기">쉬운 말</button>
+    <button class="btn sm" data-p="원본 발언과 비교해 잘못된 부분이 있으면 바로잡기">원본 기준 교정</button>
+    <button class="btn sm" data-p="맞춤법·띄어쓰기·어색한 문장만 고치기">맞춤법</button>
+  </div>
+  <textarea id="aiInst" placeholder="직접 지시하기 (예: 날짜를 앞으로 빼고 존댓말로)"></textarea>
+  <div class="row"><button class="btn pri" id="aiRun">Claude로 고치기</button><span class="hint" id="aiMsg"></span></div>
+  <div id="aiOutWrap" style="display:none">
+    <textarea id="aiOut" style="height:110px;margin-top:6px"></textarea>
+    <div class="row"><button class="btn pri" id="aiApply">적용</button><button class="btn" id="aiCancel">취소</button></div>
+  </div>
+</div>
 <div id="measure" class="pages"></div>
 <div id="printMount"></div>
 <div class="toast" id="toast"></div>
@@ -396,21 +457,29 @@ function boldFacts(t){
 function buildDoc(S){
   const {utts,groups,ana,meta,props,opts}=S;
   const title=meta.title||('녹취록 — '+(ana.speakers.join(', ')||'기록'));
-  const agenda=meta.agenda||topKeys(utts.map(u=>u.text).join(' '),4).join(' · ');
+  const AI=S.ai&&S.aiTopics?S.ai:null;
+  const agenda=meta.agenda||(S.ai&&S.ai.agenda)||topKeys(utts.map(u=>u.text).join(' '),4).join(' · ');
+  const purpose=meta.purpose||(S.ai&&S.ai.purpose)||'';
+  const evSup=ev=>opts.ev&&ev&&ev.length?'<sup class="ev">['+ev.join(',')+']</sup>':'';
   let h='<h1>'+esc(title)+'</h1>';
-  h+='<p class="byline">'+esc(meta.date||new Date().toISOString().slice(0,10))+' · 자동 정리 초안</p>';
+  h+='<p class="byline">'+esc(meta.date||new Date().toISOString().slice(0,10))+' · '+(S.ai?'Claude 정리 초안':'자동 정리 초안')+'</p>';
   h+='<h2>1. 개요</h2><table><tbody><tr><th>항목</th><th>내용</th></tr>';
   const rows=[['일시',meta.when],['발신',meta.from],['수신',meta.to]];
   if(!meta.from&&!meta.to&&ana.speakers.length)rows.push(['참석자',ana.speakers.join(', ')]);
-  rows.push(['안건',agenda],['목적',meta.purpose]);
+  rows.push(['안건',agenda],['목적',purpose]);
   rows.forEach(r=>{if(r[1])h+='<tr><td>'+esc(r[0])+'</td><td>'+esc(r[1])+'</td></tr>'});
   h+='</tbody></table>';
   h+='<h2>2. 주요 내용</h2>';
   groups.forEach((g,gi)=>{
     const text=g.map(i=>utts[i].text).join(' ');
-    const label=topKeys(text,2).join(' · ')||('구간 '+(gi+1));
-    if(groups.length>1||true)h+='<h3>2-'+(gi+1)+'. '+esc(label)+'</h3>';
+    const T=AI?AI.topics[S.topicOrder[gi]]:null;
+    const label=(T&&T.label)||topKeys(text,2).join(' · ')||('구간 '+(gi+1));
+    h+='<h3>2-'+(gi+1)+'. '+esc(label)+'</h3>';
     h+='<ul>';
+    if(T&&T.points&&T.points.length){
+      T.points.forEach(pt=>{h+='<li>'+(pt.speaker?'<strong>'+esc(pt.speaker)+':</strong> ':'')+boldFacts(pt.text)+evSup(pt.evidence)+'</li>'});
+      h+='</ul>';return;
+    }
     g.forEach(i=>{
       const u=utts[i];
       h+='<li>'+(u.speaker?'<strong>'+esc(u.speaker)+':</strong> ':'')+(opts.time&&u.time?'<span style="color:#7b8494">['+esc(u.time)+']</span> ':'')+boldFacts(u.text)+'</li>';
@@ -428,6 +497,7 @@ function buildDoc(S){
     RE.fact.lastIndex=0;sc.forEach(x=>add(x,''));
   }
   RE.fact.lastIndex=0;
+  if(S.ai&&S.ai.summary&&S.ai.summary.length){sum.length=0;S.ai.summary.forEach(x=>sum.push(boldFacts(x.text)+evSup(x.evidence)))}
   h+='<ol>'+sum.map(s=>'<li>'+s+'</li>').join('')+'</ol>';
   h+='<h2>4. 미해결 사항 및 후속 조치(안)</h2>';
   h+='<blockquote>아래는 원본 내용을 바탕으로 자동 생성한 제안이며, 당사자 간에 합의된 사항이 아닙니다.</blockquote>';
@@ -435,7 +505,9 @@ function buildDoc(S){
   ana.open.slice(0,3).forEach(x=>{h+='<li><strong>미해결:</strong> '+esc(x.s)+'</li>'});
   props.filter(p=>p.on).forEach((p,i)=>{h+='<li><strong>제안 '+(i+1)+' — '+esc(p.title)+':</strong> '+esc(p.detail)+'</li>'});
   h+='</ul>';
-  h+='<h2>5. 참고</h2><ul><li>본 기록은 원본 텍스트('+utts.length+'개 발언)를 규칙 기반으로 자동 정리한 초안입니다. 음성 인식 오류가 남아 있을 수 있으므로 대외 인용 전에 원본을 확인하세요.</li>';
+  h+='<h2>5. 참고</h2><ul><li>본 기록은 원본 텍스트('+utts.length+'개 발언)를 '+(S.ai?'Claude('+esc(S.aiModel||'')+')로 맥락 정리한':'규칙 기반으로 자동 정리한')+' 초안입니다. 음성 인식 오류가 남아 있을 수 있으므로 대외 인용 전에 원본을 확인하세요.</li>';
+  if(S.ai&&S.ai.warnings&&S.ai.warnings.length)S.ai.warnings.forEach(w=>{h+='<li><strong>확인 필요:</strong> '+esc(w)+'</li>'});
+  if(S.ai&&S.corrApplied)h+='<li>음성 인식 오류로 판단해 교정한 곳: '+S.corrApplied+'건.</li>';
   h+='<li>정리 옵션: '+[opts.fill?'군더더기 제거':'',opts.punct?'문장 부호 보정':'',opts.merge?'연속 발언 합치기':'',groups.length>1?'주제 '+groups.length+'개 구간 분할':''].filter(Boolean).join(', ')+'.</li></ul>';
   return h;
 }
@@ -448,9 +520,9 @@ function detectDate(){
   const m=$('#src').value.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
   return m?m[1]+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[3]).padStart(2,'0'):new Date().toISOString().slice(0,10);
 }
-function opts(){return{fill:$('#oFill').checked,punct:$('#oPunct').checked,merge:$('#oMerge').checked,time:$('#oTime').checked}}
+function opts(){return{fill:$('#oFill').checked,punct:$('#oPunct').checked,merge:$('#oMerge').checked,time:$('#oTime').checked,ev:$('#oEv').checked}}
 
-function run(force){
+async function run(force){
   const raw=$('#src').value;
   if(!raw.trim()){toast('원본 텍스트를 먼저 입력하세요.');return}
   if(!force&&editor.dataset.dirty==='1'&&!confirm('직접 수정한 문서가 새 결과로 바뀝니다. 계속할까요?'))return;
@@ -468,16 +540,23 @@ function run(force){
   editor.dataset.dirty='0';
   const t=STATE.meta.title||'녹취록';$('#docName').value=t;
   renderAna();renderSug();onDocChange(true);
-  toast('정리 완료: 발언 '+utts.length+'개 · 주제 '+groups.length+'개 · 제안 '+props.length+'건');
+  if(CL.engine==='claude'&&CL.ready){
+    const ok=await runClaude();
+    if(!ok)toast('Claude 분석에 실패해 내장 규칙 결과를 남겼습니다.',4500);
+    return;
+  }
+  toast('정리 완료: 발언 '+utts.length+'개 · 주제 '+groups.length+'개 · 제안 '+props.length+'건'+(CL.engine==='claude'?' (Claude 연결 안 됨 → 내장 규칙)':''));
 }
 
 function renderAna(){
   const a=STATE.ana,p=$('#pane-ana');
   const item=(cls,meta,txt,ev)=>'<div class="card '+cls+'"><div class="meta">'+meta+'</div>'+esc(txt)+(ev?'<div class="ev">'+esc(ev)+'</div>':'')+'</div>';
   let h='<div class="stats"><span class="chip">발언 '+STATE.utts.length+'</span><span class="chip">화자 '+(a.speakers.length||'-')+'</span><span class="chip">주제 '+STATE.groups.length+'</span><span class="chip">질문 '+a.qa.length+'</span></div>';
-  h+='<h4>결정·약속 ('+a.decisions.length+')</h4>'+(a.decisions.map(x=>item('dec',esc(x.speaker||'발언'),x.s)).join('')||'<div class="empty">감지된 항목 없음</div>');
-  h+='<h4>요청·할 일 ('+a.actions.length+')</h4>'+(a.actions.map(x=>item('act',esc(x.speaker||'발언')+(x.due?' · 기한 '+esc(x.due):''),x.s)).join('')||'<div class="empty">감지된 항목 없음</div>');
-  h+='<h4>미해결·제한 ('+a.open.length+')</h4>'+(a.open.map(x=>item('opn',esc(x.speaker||'발언'),x.s)).join('')||'<div class="empty">감지된 항목 없음</div>');
+  if(STATE.ai)h+='<div class="card" style="border-left:4px solid #7a4bd6"><div class="meta">✦ Claude 분석 결과 · '+esc(STATE.aiModel||'')+'</div>'+(STATE.corrApplied?'음성 인식 교정 '+STATE.corrApplied+'건 적용':'교정할 오류 없음')+(STATE.ai.warnings&&STATE.ai.warnings.length?'<div class="ev">'+STATE.ai.warnings.map(esc).join('<br>')+'</div>':'')+'</div>';
+  if(STATE.ai&&STATE.ai.corrections&&STATE.ai.corrections.length)h+='<h4>교정 내역 ('+STATE.ai.corrections.length+')</h4>'+STATE.ai.corrections.map(c=>'<div class="card"><div class="meta">발언 '+c.utt+(c.applied?'':' · 적용 못 함')+'</div><s style="color:#b42318">'+esc(c.from)+'</s> → <strong>'+esc(c.to)+'</strong>'+(c.reason?'<div class="ev">'+esc(c.reason)+'</div>':'')+'</div>').join('');
+  h+='<h4>결정·약속 ('+a.decisions.length+')</h4>'+(a.decisions.map(x=>item('dec',esc(x.speaker||'발언'),x.s,x.ev)).join('')||'<div class="empty">감지된 항목 없음</div>');
+  h+='<h4>요청·할 일 ('+a.actions.length+')</h4>'+(a.actions.map(x=>item('act',esc(x.speaker||'발언')+(x.due?' · 기한 '+esc(x.due):''),x.s,x.ev)).join('')||'<div class="empty">감지된 항목 없음</div>');
+  h+='<h4>미해결·제한 ('+a.open.length+')</h4>'+(a.open.map(x=>item('opn',esc(x.speaker||'발언'),x.s,x.ev)).join('')||'<div class="empty">감지된 항목 없음</div>');
   h+='<h4>질문과 답변 ('+a.qa.length+')</h4>'+(a.qa.map(x=>item('',esc(x.speaker||'질문'),'Q. '+x.q,x.a?'A. '+x.a:'')).join('')||'<div class="empty">감지된 항목 없음</div>');
   h+='<h4>핵심 수치·날짜 ('+a.facts.length+')</h4>'+(a.facts.map(x=>'<span class="chip" title="'+esc(x.s)+'">'+esc(x.f)+'</span> ').join('')||'<div class="empty">감지된 항목 없음</div>');
   p.innerHTML=h;
@@ -486,10 +565,10 @@ function renderSug(){
   const p=$('#pane-sug');
   let h='<h4>후속 조치 제안 (문서 4번 항목에 반영됩니다)</h4>';
   STATE.props.forEach(x=>{
-    h+='<div class="card prop"><label class="chk" style="margin:0 0 4px"><input type="checkbox" data-pid="'+x.id+'" '+(x.on?'checked':'')+'> <strong>'+esc(x.title)+'</strong></label>'+esc(x.detail)+(x.ev?'<div class="ev">근거: '+esc(x.ev)+'</div>':'')+'<div style="margin-top:6px"><button class="btn sm" data-ins="'+x.id+'">문서에 추가</button></div></div>';
+    h+='<div class="card prop"><label class="chk" style="margin:0 0 4px"><input type="checkbox" data-pid="'+x.id+'" '+(x.on?'checked':'')+'> <strong>'+esc(x.title)+'</strong>'+(x.priority?' <span class="chip pri-'+x.priority[0]+'">'+({high:'우선',medium:'보통',low:'낮음'})[x.priority]+'</span>':'')+'</label>'+esc(x.detail)+(x.ev?'<div class="ev">근거: '+esc(x.ev)+'</div>':'')+'<div style="margin-top:6px"><button class="btn sm" data-ins="'+x.id+'">문서에 추가</button></div></div>';
   });
   h+='<div class="row"><button class="btn sm" id="bApply">선택 항목으로 4번 다시 쓰기</button></div>';
-  h+='<h4>후속 문서 초안</h4><div class="row"><button class="btn sm" data-draft="official">공문 초안</button><button class="btn sm" data-draft="mail">공유 메일 초안</button></div>';
+  h+='<h4>후속 문서 초안</h4><div class="row"><button class="btn sm" data-draft="official">공문 초안</button><button class="btn sm" data-draft="mail">공유 메일 초안</button></div><div class="row"><button class="btn sm" data-aidraft="official" style="color:#6b3fd1">✦ Claude 공문 초안</button><button class="btn sm" data-aidraft="mail" style="color:#6b3fd1">✦ Claude 메일 초안</button></div>';
   h+='<textarea class="src" id="draftBox" style="height:220px" placeholder="초안이 여기에 생성됩니다. 수정 후 복사하거나 문서 끝에 넣을 수 있습니다."></textarea>';
   h+='<div class="row"><button class="btn sm" id="bDraftCopy">복사</button><button class="btn sm" id="bDraftIns">문서 끝에 삽입</button></div>';
   p.innerHTML=h;
@@ -514,6 +593,7 @@ $('#pane-sug').addEventListener('click',e=>{
     ul.innerHTML=h;onDocChange();toast('반영했습니다.');
   }
   if(t.dataset.draft)makeDraft(t.dataset.draft);
+  if(t.dataset.aidraft)aiDraft(t.dataset.aidraft);
   if(t.id==='bDraftCopy'){copyText($('#draftBox').value)}
   if(t.id==='bDraftIns'){
     const v=$('#draftBox').value.trim();if(!v)return;
@@ -580,6 +660,7 @@ function normalizeSrc(html){
     else if(n.nodeType===1&&/^(DIV|SPAN|FONT|B|I|U|STRONG|EM)$/.test(n.tagName)&&!n.querySelector('p,ul,ol,table,h1,h2,h3,blockquote')){const p=document.createElement('p');p.innerHTML=n.innerHTML;n.replaceWith(p)}
   });
   box.querySelectorAll('[contenteditable]').forEach(x=>x.removeAttribute('contenteditable'));
+  box.querySelectorAll('[data-vid]').forEach(x=>{x.removeAttribute('data-vid');x.removeAttribute('title');x.classList.remove('v-ok','v-warn','v-bad');if(!x.getAttribute('class'))x.removeAttribute('class')});
   return box;
 }
 function paginate(html,container){
@@ -828,6 +909,229 @@ editor.addEventListener('paste',e=>{ // 서식 없이 붙여넣기(깨짐 방지
 });
 $('#bRun').addEventListener('click',()=>run(false));
 
+
+/* ================= 11. Claude 연동 (맥 로컬 서버 필요) ================= */
+const CL={server:false,ready:false,keySource:'none',engine:'rules',model:'claude-opus-5-5',effort:'medium',busy:false,models:[]};
+function loadCl(){try{const v=JSON.parse(store.get('te.ai','null'));if(v){CL.engine=v.engine||'rules';CL.model=v.model||CL.model;CL.effort=v.effort||CL.effort}}catch(e){}}
+function saveCl(){store.set('te.ai',JSON.stringify({engine:CL.engine,model:CL.model,effort:CL.effort}))}
+async function clStatus(){
+  CL.server=false;
+  if(/^https?:$/.test(location.protocol)){
+    try{const r=await fetch('/api/status',{cache:'no-store'});if(r.ok){const j=await r.json();CL.server=!!j.server;CL.keySource=j.keySource;CL.models=j.models||[]}}catch(e){}
+  }
+  CL.ready=CL.server;
+  if(!CL.server)CL.engine='rules';
+  renderCl();
+}
+function renderCl(){
+  const dot=$('#aiDot'),st=$('#aiStatus');
+  const sel=$('#aiModel');
+  if(CL.models.length&&sel.options.length!==CL.models.length){sel.innerHTML=CL.models.map(m=>'<option value="'+esc(m.id)+'">'+esc(m.label)+'</option>').join('')}
+  sel.value=CL.model;$('#aiEffort').value=CL.effort;
+  const off=!CL.server;
+  sel.disabled=$('#aiEffort').disabled=off;
+  $('#bKey').disabled=off;
+  dot.className='dot'+(CL.server?(CL.keySource==='none'?' warn':' ok'):'');
+  if(off)st.innerHTML='서버 없이 열린 상태입니다. Claude 기능은 맥에서 <b>녹취록편집기.command</b>로 실행해야 켜집니다. (지금은 내장 규칙만 사용)';
+  else if(CL.keySource==='none')st.textContent='API 키가 없습니다. ‘키 설정’에서 입력하세요. (ant auth login 로그인이 있으면 그대로 시도합니다)';
+  else st.textContent='연결 준비됨 · 키: '+({stored:'이 맥에 저장된 키',env:'환경변수 ANTHROPIC_API_KEY','env-token':'환경변수 인증 토큰'})[CL.keySource];
+  $$('#engine label').forEach(l=>{l.classList.toggle('on',l.dataset.e===CL.engine);l.style.opacity=(l.dataset.e==='claude'&&off)?.5:1});
+  $$('[data-aidraft],#bVerify,#bAi').forEach(b=>{b.disabled=off;b.title=off?'맥 로컬 서버에서만 사용할 수 있습니다.':b.title});
+}
+$$('#engine label').forEach(l=>l.addEventListener('click',e=>{
+  e.preventDefault();
+  if(l.dataset.e==='claude'&&!CL.server){toast('Claude 분석은 녹취록편집기.command로 실행했을 때만 쓸 수 있습니다.',4500);return}
+  CL.engine=l.dataset.e;saveCl();renderCl();
+}));
+$('#aiModel').addEventListener('change',e=>{CL.model=e.target.value;saveCl()});
+$('#aiEffort').addEventListener('change',e=>{CL.effort=e.target.value;saveCl()});
+$('#bKey').addEventListener('click',()=>{$('#keyRow').classList.toggle('on');$('#keyIn').focus()});
+$('#keySave').addEventListener('click',async()=>{
+  try{
+    const r=await fetch('/api/key',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:$('#keyIn').value})});
+    const j=await r.json();if(!r.ok)throw new Error(j.error||'저장 실패');
+    $('#keyIn').value='';$('#keyRow').classList.remove('on');toast('키를 이 맥에 저장했습니다.');clStatus();
+  }catch(e){toast(e.message,4500)}
+});
+$('#keyDel').addEventListener('click',async()=>{
+  if(!confirm('저장된 API 키를 삭제할까요?'))return;
+  try{await fetch('/api/key',{method:'DELETE'});toast('삭제했습니다.');clStatus()}catch(e){toast('삭제하지 못했습니다.')}
+});
+
+async function api(path,body,onProgress,signal){
+  const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...body,model:CL.model,effort:CL.effort}),signal});
+  const ct=r.headers.get('content-type')||'';
+  if(ct.includes('ndjson')){
+    const rd=r.body.getReader(),dec=new TextDecoder();let buf='',res=null;
+    const handle=line=>{if(!line.trim())return;const m=JSON.parse(line);
+      if(m.t==='progress')onProgress&&onProgress(m);else if(m.t==='error')throw new Error(m.message);else if(m.t==='done')res=m};
+    for(;;){const {done,value}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});let i;while((i=buf.indexOf('\n'))>=0){handle(buf.slice(0,i));buf=buf.slice(i+1)}}
+    handle(buf);
+    if(!res)throw new Error('응답이 중간에 끊겼습니다. 다시 시도해 주세요.');
+    return res;
+  }
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(j.error||('서버 오류 '+r.status));
+  return j;
+}
+let busyT=null,busyAt=0;
+function setBusy(on,label){
+  CL.busy=on;$('#aiBar').classList.toggle('on',on);
+  ['#bRun','#bVerify','#aiRun'].forEach(s=>{const b=$(s);if(b)b.disabled=on});
+  clearInterval(busyT);
+  if(on){busyAt=Date.now();busyT=setInterval(()=>{const u=$('#aiUsage');if(u)u.dataset.sec=Math.round((Date.now()-busyAt)/1000)},500);$('#aiUsage').textContent=label||'Claude 작업 중…'}
+}
+function showUsage(u){if(!u)return;$('#aiUsage').textContent='입력 '+u.input.toLocaleString()+' · 출력 '+u.output.toLocaleString()+' 토큰 · 약 $'+u.usd.toFixed(3)+' (추정)'}
+function progressText(m){const s=Math.round((Date.now()-busyAt)/1000);$('#aiUsage').textContent='Claude가 작성 중… '+m.chars.toLocaleString()+'자 · '+s+'초'}
+function currentUtts(){
+  if(STATE)return STATE.utts;
+  const o=opts(),dict=parseDict($('#dict').value);
+  let u=parseTranscript($('#src').value);if(o.merge)u=mergeSame(u);
+  return u.map(x=>({...x,text:cleanText(x.text,o,dict)})).filter(x=>x.text);
+}
+const lite=utts=>utts.map(u=>({speaker:u.speaker,text:u.text}));
+
+async function runClaude(){
+  if(CL.busy)return false;
+  setBusy(true,'Claude 분석 시작…');
+  try{
+    const r=await api('/api/analyze',{utts:lite(STATE.utts),meta:STATE.meta,glossary:$('#dict').value},progressText);
+    applyAI(r.data,r.usage);showUsage(r.usage);
+    return true;
+  }catch(e){toast('Claude 오류: '+e.message,7000);$('#aiUsage').textContent='실패: '+e.message;return false}
+  finally{setBusy(false)}
+}
+function applyAI(ai,usage){
+  const utts=STATE.utts.map(u=>({...u}));let applied=0;
+  (ai.corrections||[]).forEach(c=>{c.applied=false;const u=utts[c.utt-1];
+    if(u&&c.from&&c.to&&u.text.includes(c.from)){u.text=u.text.replace(c.from,c.to);c.applied=true;applied++}});
+  const n=utts.length,seen=new Set();
+  const topics=(ai.topics||[]).filter(t=>t&&t.utts&&t.utts.length);
+  const ok=topics.length>0&&topics.every(t=>t.utts.every(i=>Number.isInteger(i)&&i>=1&&i<=n&&!seen.has(i)&&seen.add(i)))&&seen.size===n;
+  let groups=STATE.groups,order=null;
+  if(ok){
+    order=topics.map((_,i)=>i).sort((a,b)=>Math.min(...topics[a].utts)-Math.min(...topics[b].utts));
+    groups=order.map(i=>[...topics[i].utts].sort((a,b)=>a-b).map(x=>x-1));
+    ai.topics=topics;
+  }else toast('주제 구간 번호가 어긋나 내장 규칙의 구간 나누기를 사용했습니다.',4500);
+  const ev=a=>{const u=utts[((a&&a[0])||0)-1];return u?u.text:''};
+  const base=analyze(utts);
+  const pr={high:0,medium:1,low:2};
+  const ana={...base,
+    decisions:(ai.decisions||[]).map(d=>({s:d.text,speaker:d.speaker,ev:ev(d.evidence)})),
+    actions:(ai.actions||[]).map(a=>({s:a.task,speaker:a.owner,due:a.due,ev:ev(a.evidence)})),
+    open:(ai.open_issues||[]).map(o=>({s:o.text,speaker:'',ev:ev(o.evidence)})),
+    qa:(ai.qa||[]).map(q=>({q:q.question,a:q.answer,speaker:'',ev:ev(q.evidence)})),
+    facts:(ai.facts||[]).map(f=>({f:f.value,s:f.context}))};
+  const props=(ai.proposals||[]).slice().sort((a,b)=>(pr[a.priority]||1)-(pr[b.priority]||1)).map((p,i)=>({id:i,title:p.title,detail:p.detail,priority:p.priority,ev:ev(p.evidence),on:true}));
+  STATE={...STATE,utts,groups,ana,props,ai,aiTopics:ok,topicOrder:order,aiModel:usage&&usage.model,corrApplied:applied,opts:opts(),meta:meta()};
+  editor.innerHTML=buildDoc(STATE);editor.dataset.dirty='0';
+  renderAna();renderSug();onDocChange(true);
+  toast('Claude 정리 완료: 주제 '+groups.length+'개 · 교정 '+applied+'건 · 제안 '+props.length+'건');
+}
+
+/* ---- 사실 대조 ---- */
+let VER=[];
+function verifyTargets(){
+  const out=[];let skip=false,any=false;
+  [...editor.children].forEach(ch=>{
+    if(ch.tagName==='H2'){any=true;skip=/^\s*[45]\./.test(ch.textContent)}
+    if(skip||/^(H[1-6]|TABLE|BLOCKQUOTE|HR)$/.test(ch.tagName)||ch.classList.contains('byline'))return;
+    const leaf=ch.matches('li,p')?[ch]:[...ch.querySelectorAll('li,p')];
+    leaf.forEach(el=>{if(!el.querySelector('li')&&el.textContent.trim().length>=6)out.push(el)});
+  });
+  return out;
+}
+function clearVer(){editor.querySelectorAll('[data-vid]').forEach(x=>{x.removeAttribute('data-vid');x.removeAttribute('title');x.classList.remove('v-ok','v-warn','v-bad')});VER=[];}
+async function verifyDoc(){
+  if(CL.busy)return;
+  if(!CL.server){toast('맥 로컬 서버에서만 사용할 수 있습니다.');return}
+  const els=verifyTargets();if(!els.length){toast('대조할 문장이 없습니다. 먼저 문서를 생성하세요.');return}
+  clearVer();els.forEach((el,i)=>el.dataset.vid=i);
+  setBusy(true,'원본과 대조 중…');
+  try{
+    const utts=currentUtts();
+    const r=await api('/api/verify',{utts:lite(utts),blocks:els.map((el,i)=>({id:i,text:el.textContent.trim()}))},progressText);
+    VER=(r.data.results||[]).map(x=>({...x,el:els[x.id]})).filter(x=>x.el);
+    VER.forEach(x=>{x.el.classList.add({supported:'v-ok',partial:'v-warn',unsupported:'v-bad'}[x.verdict]||'v-ok');if(x.note)x.el.title=x.note});
+    renderVer(utts);showUsage(r.usage);
+    const bad=VER.filter(x=>x.verdict!=='supported').length;
+    toast(bad?'확인이 필요한 문장 '+bad+'개를 표시했습니다.':'모든 문장이 원본에 근거합니다.',4500);
+    $$('#tabs button').find(b=>b.dataset.tab==='ver').click();
+  }catch(e){toast('Claude 오류: '+e.message,7000)}
+  finally{setBusy(false);onDocChange(true)}
+}
+function renderVer(utts){
+  const c={supported:0,partial:0,unsupported:0};VER.forEach(x=>c[x.verdict]=(c[x.verdict]||0)+1);
+  const lab={supported:['근거 있음','#1a7f4b'],partial:['일부 근거','#b26a00'],unsupported:['근거 없음','#b42318']};
+  let h='<div class="stats"><span class="chip">전체 '+VER.length+'</span><span class="chip" style="color:#1a7f4b">근거 있음 '+c.supported+'</span><span class="chip" style="color:#b26a00">일부 '+c.partial+'</span><span class="chip" style="color:#b42318">근거 없음 '+c.unsupported+'</span></div>';
+  h+='<div class="row"><button class="btn sm" id="bVerify">다시 대조</button><button class="btn sm" id="bVerClear">표시 지우기</button></div>';
+  const order={unsupported:0,partial:1,supported:2};
+  VER.slice().sort((a,b)=>order[a.verdict]-order[b.verdict]).forEach(x=>{
+    if(x.verdict==='supported')return;
+    const q=(x.evidence||[]).slice(0,2).map(i=>utts[i-1]?'발언 '+i+': '+utts[i-1].text.slice(0,90):'').filter(Boolean).join(' / ');
+    h+='<div class="card" style="border-left:4px solid '+lab[x.verdict][1]+';cursor:pointer" data-vgo="'+x.id+'"><div class="meta" style="color:'+lab[x.verdict][1]+'">'+lab[x.verdict][0]+'</div>'+esc(x.el.textContent.trim().slice(0,140))+(x.note?'<div class="ev">'+esc(x.note)+'</div>':'')+(q?'<div class="ev">'+esc(q)+'</div>':'')+'</div>';
+  });
+  if(!VER.some(x=>x.verdict!=='supported'))h+='<div class="empty">문제 되는 문장이 없습니다.</div>';
+  $('#pane-ver').innerHTML=h;
+}
+$('#pane-ver').addEventListener('click',e=>{
+  const t=e.target;
+  if(t.id==='bVerify')verifyDoc();
+  if(t.id==='bVerClear'){clearVer();$('#pane-ver').innerHTML='<div class="empty">표시를 지웠습니다.<br><br><button class="btn pri" id="bVerify">원본과 사실 대조 실행</button></div>';onDocChange(true)}
+  const c=t.closest('[data-vgo]');
+  if(c){const x=VER.find(v=>v.id===+c.dataset.vgo);if(x&&x.el.isConnected){x.el.scrollIntoView({behavior:'smooth',block:'center'});x.el.style.outline='2px solid #2f6fdd';setTimeout(()=>x.el.style.outline='',1400)}}
+});
+
+/* ---- 선택 구간 AI 편집 ---- */
+let aiRange=null;
+function openAiPop(){
+  const sel=getSelection();
+  if(!sel.rangeCount||sel.isCollapsed||!editor.contains(sel.anchorNode)){toast('고칠 문장을 문서에서 먼저 드래그해 선택하세요.');return}
+  aiRange=sel.getRangeAt(0).cloneRange();
+  const pre=document.createRange();pre.selectNodeContents(editor);pre.setEnd(aiRange.startContainer,aiRange.startOffset);
+  const post=document.createRange();post.selectNodeContents(editor);post.setStart(aiRange.endContainer,aiRange.endOffset);
+  aiPop.before=pre.toString().slice(-400);aiPop.after=post.toString().slice(0,400);
+  aiPop.text=sel.toString();
+  $('#aiSel').textContent=aiPop.text;$('#aiOutWrap').style.display='none';$('#aiMsg').textContent='';
+  $('#aiPop').classList.add('on');$('#aiInst').focus();
+}
+const aiPop={before:'',after:'',text:''};
+$('#bAi').addEventListener('click',openAiPop);
+$('#aiClose').addEventListener('click',()=>$('#aiPop').classList.remove('on'));
+$('#aiCancel').addEventListener('click',()=>{$('#aiOutWrap').style.display='none'});
+$$('#aiPop .presets button').forEach(b=>b.addEventListener('click',()=>{$('#aiInst').value=b.dataset.p;$('#aiRun').click()}));
+$('#aiRun').addEventListener('click',async()=>{
+  if(CL.busy||!aiPop.text)return;
+  setBusy(true,'Claude가 고치는 중…');$('#aiMsg').textContent='작업 중…';
+  try{
+    const r=await api('/api/edit',{utts:lite(currentUtts()),selection:aiPop.text,before:aiPop.before,after:aiPop.after,instruction:$('#aiInst').value.trim()});
+    $('#aiOut').value=r.data.text;$('#aiOutWrap').style.display='block';$('#aiMsg').textContent='';showUsage(r.usage);
+  }catch(e){$('#aiMsg').textContent='';toast('Claude 오류: '+e.message,7000)}
+  finally{setBusy(false)}
+});
+$('#aiApply').addEventListener('click',()=>{
+  const t=$('#aiOut').value;if(!t.trim()||!aiRange)return;
+  editor.focus();const sel=getSelection();sel.removeAllRanges();sel.addRange(aiRange);
+  document.execCommand('insertText',false,t);
+  $('#aiPop').classList.remove('on');onDocChange();toast('적용했습니다. 되돌리려면 Ctrl+Z (⌘Z)');
+});
+
+/* ---- Claude 초안 ---- */
+async function aiDraft(kind){
+  if(CL.busy)return;
+  if(!CL.server){toast('맥 로컬 서버에서만 사용할 수 있습니다.');return}
+  setBusy(true,'Claude가 초안 작성 중…');
+  try{
+    const m=STATE?STATE.meta:meta();
+    const facts=STATE?[...STATE.ana.decisions,...STATE.ana.open].map(x=>x.s):[];
+    const props=STATE?STATE.props.filter(p=>p.on).map(p=>({title:p.title,detail:p.detail})):[];
+    const r=await api('/api/draft',{kind,utts:lite(currentUtts()),meta:m,facts,proposals:props});
+    $('#draftBox').value='제목: '+r.data.subject+'\n\n'+r.data.body;showUsage(r.usage);
+  }catch(e){toast('Claude 오류: '+e.message,7000)}
+  finally{setBusy(false)}
+}
+
 /* 초기화 */
 (function init(){
   $('#src').value=store.get('te.src','');
@@ -837,10 +1141,11 @@ $('#bRun').addEventListener('click',()=>run(false));
   $('#docName').value=store.get('te.name','제목 없는 녹취록');
   try{const L=JSON.parse(store.get('te.look','null'));if(L){$('#fontSel').value=L[0];$('#sizeSel').value=L[1];$('#lhSel').value=L[2];$('#marSel').value=L[3]}}catch(e){}
   applyLook();
+  loadCl();clStatus();
   editor.innerHTML=store.get('te.doc','');
   onDocChange(true);
   setMode(store.get('te.mode','edit')==='preview'?'preview':store.get('te.mode','edit'));
-  window.__te={paginate,run,toMarkdown,fullHtml,get state(){return STATE}};
+  window.__te={paginate,run,toMarkdown,fullHtml,CL,clStatus,applyAI,verifyDoc,get state(){return STATE}};
 })();
 })();
 </script>
